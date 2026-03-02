@@ -5,8 +5,127 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:oop_project"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Studentplanner" Height="450" Width="800">
     <Grid>
-        
+        <Grid.RowDefinitions>
+            <RowDefinition Height="103*"/>
+            <RowDefinition Height="331*"/>
+        </Grid.RowDefinitions>
+        <TabControl Grid.RowSpan="2">
+            <TabItem Header="Summary">
+                <Grid >
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="200" />
+
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock>
+                            Hello,
+
+
+                        </TextBlock>
+                        <Button>Save</Button>
+                        <Button>Load from file</Button>
+
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <ItemsControl>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="5"
+                        Padding="10"
+                        Background="Black"
+                        CornerRadius="5">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Titre}" FontWeight="Bold"/>
+                                            <TextBlock Text="{Binding Debut, StringFormat='{}{0:HH:mm}'}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+            <TabItem Header="To do list">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition ></ColumnDefinition>
+                        <ColumnDefinition></ColumnDefinition>
+                        <ColumnDefinition></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock> Add a Task :</TextBlock>
+                        <TextBlock > Title :</TextBlock>
+                        <TextBox x:Name="tblk_task_name" Margin="0,5" />
+                        <TextBlock> Description :</TextBlock>
+                        <TextBox x:Name="tblk_task_desc" Margin="0,5" />
+                        <TextBlock> Due date : (DD/MM/YYYY)</TextBlock>
+                        <TextBox x:Name="tblk_task_due_date" Margin="0,5" />
+                        <Button Content="Add Task" Margin="0,10" Click="btnTaskadd"/>
+                        
+
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock>Things to do :</TextBlock>
+                        <ListBox Name="lstTasks">
+
+                        </ListBox>
+                        <Button Name="btnDeleteTask" Margin="0.10" Click="btnTaskDel">Delete Task</Button>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock> Details of selected task :</TextBlock>
+                        <ListBox>
+
+                        </ListBox>
+                    </StackPanel>
+                </Grid>
+
+            </TabItem>
+            <TabItem Header="Planning">
+                <Grid>
+
+                </Grid>
+            </TabItem>
+            <TabItem Header="Timetable" Height="22" Margin="-2,0,-2,0" VerticalAlignment="Bottom">
+                <StackPanel Margin="10">
+
+                    <TextBlock Text="iCal Link "/>
+
+                    <TextBox Text="{Binding UrlIcal, UpdateSourceTrigger=PropertyChanged}"
+             Margin="0,5"/>
+
+                    <Button Content="Load the timetable"
+            Margin="0,10" Click="Button_Click"/>
+
+                    <!-- Vue jour -->
+                    <ItemsControl ItemsSource="{Binding EvenementsDuJour}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="4"
+                        Padding="8"
+                        Background="#E8F5E9"
+                        CornerRadius="4">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Titre}" FontWeight="Bold"/>
+                                        <TextBlock>
+                            <Run Text="{Binding Debut, StringFormat='{}{0:HH:mm}'}"/>
+                            <Run Text=" - "/>
+                            <Run Text="{Binding Fin, StringFormat='{}{0:HH:mm}'}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                </StackPanel>
+
+            </TabItem>
+
+
+        </TabControl>
+
     </Grid>
 </Window>
