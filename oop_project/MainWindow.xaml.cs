@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -37,13 +38,31 @@ namespace oop_project
         {
             //still to write
             // to call when saving to json format 
-            return base.ToString();
+            string info = "";
+            info += $"User ID: {Id},\n";
+            info += $"Ical URL: {IcalUrl},\n";
+            info += "Evenements: {\n";
+            foreach (var evt in Evenements)
+            {
+                info += $"Id: {evt.Id} {{ : \n  Titre: {evt.Titre},\n Debut: {evt.Debut},\n Fin: {evt.Fin}\n}}\n";
+            }
+            info += "}\n";
+            info += "Tasks: {\n";
+            foreach (var task in tasks)
+            {
+                info += $"Id: {task.Id} {{ : \n  Name: {task.Name},\n Description: {task.Description},\n Deadline: {task.Deadline}\n}}\n";
+            }
+            info += "}\n";
+
+
+            return info;
         }
     }
     public class Evenement
     {
         public int userId = 1;
         public virtual user User { get; set; }
+        
         public int Id { get; set; }
         public DateTime Debut { get; set; }
         public DateTime Fin { get; set; }
@@ -96,11 +115,11 @@ namespace oop_project
         public async Task ChargerCalendrierAsync()
         {
             //https://timetables.atu.ie/Ical/StudentSet?studentSetID=a6c7b613-634c-ddbc-984c-ca7f1e7cc858&locality=sligo 
-            if (string.IsNullOrWhiteSpace(UrlIcal))
+            if (string.IsNullOrWhiteSpace(UrlIcal) && (actu.IcalUrl==null))
                 return;
 
             var client = new HttpClient();
-            var ics = await client.GetStringAsync(UrlIcal);
+            var ics = await client.GetStringAsync(UrlIcal==null ? actu.IcalUrl : UrlIcal );
 
             var calendar = Ical.Net.Calendar.Load(ics);
 
@@ -165,7 +184,112 @@ namespace oop_project
             var rem = lstTasks.SelectedItem;
         }
 
+        private void BtnSave(object sender, RoutedEventArgs e)
+        {
+            Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+            dlg.DefaultExt = ".json";
+            Nullable<bool> result = dlg.ShowDialog();
+            if (result == true)
+            {
+                string filename = dlg.FileName;
+                FileInfo file = new FileInfo(filename);
+                if (!file.Exists)
+                {
+                    using (StreamWriter savefile = file.CreateText())
+                    {
+                        savefile.WriteLine("Made by Eliott Lapicque for a school project");
+                        savefile.WriteLine(actu.ToString());
+                        Messagebox.Text = "File saved successfully";
+                    }
+                }
+            }
 
+
+        }
+
+        private void btnLoad(object sender, RoutedEventArgs e)
+        {
+            Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+            dlg.DefaultExt = ".json";
+            dlg.Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*";
+            dlg.CheckFileExists = true;
+            int skipper =0;
+            Nullable<bool> result = dlg.ShowDialog();
+            if (result == true)
+            {
+                string filename = dlg.FileName;
+                FileInfo file = new FileInfo(filename);
+                using (StreamReader loadfile = file.OpenText())
+                {
+                    if (loadfile.ReadLine()!= "Made by Eliott Lapicque for a school project")
+                    {
+                        Messagebox.Text=("This file is not compatible with the application");
+
+                    }
+                    else
+                    {
+                        using (db)
+                        {
+                            loadfile.ReadLine();
+                            string[] temp = loadfile.ReadLine().Split(':');
+                            string ical = "";
+                            for (int i = 1; i < temp.Length; i++)
+                            {
+                                ical += temp[i].Trim();
+                            }
+                            actu.IcalUrl = ical;
+                            ChargerCalendrierAsync();
+                            loadfile.ReadLine();
+                            string line = loadfile.ReadLine();
+                            while (line != "}")
+                            {
+                                string ID, Titre, Debut, Fin;
+                                ID = line.Split(':')[1].Trim().TrimEnd(',');
+                                Titre = loadfile.ReadLine().Split(':')[1].Trim().TrimEnd(',');
+                                Debut = loadfile.ReadLine().Split(':')[1].Trim().TrimEnd(',');
+                                Fin = loadfile.ReadLine().Split(':')[1].Trim().TrimEnd('}').TrimEnd(',');
+                                Evenement evt = new Evenement
+                                {
+                                    Id = int.Parse(ID),
+                                    Titre = Titre,
+                                    Debut = DateTime.Parse(Debut),
+                                    Fin = DateTime.Parse(Fin),
+                                    userId = 1,
+                                    User = actu
+                                };
+                                actu.Evenements.Add(evt);
+                                db.Evenements.Add(evt);
+                            }
+                            loadfile.ReadLine();
+                            line = loadfile.ReadLine();
+                            while (line != "}")
+                            {
+                                string ID, Name, description, DEadline;
+                                ID = line.Split(':')[1].Trim().TrimEnd(',');
+                                Name = loadfile.ReadLine().Split(':')[1].Trim().TrimEnd(',');
+                                description = loadfile.ReadLine().Split(':')[1].Trim().TrimEnd(',');
+                                DEadline = loadfile.ReadLine().Split(':')[1].Trim().TrimEnd('}').TrimEnd(',');
+                                work evt = new work
+                                {
+                                    Id = int.Parse(ID),
+                                    Name = Name,
+                                    Description = description,
+                                    Deadline = DateTime.Parse(DEadline),
+                                    userId = 1,
+                                    User = actu
+                                };
+                                actu.tasks.Add(evt);
+                                db.Tasks.Add(evt);
+                            }
+                            db.Users.Add(actu);
+                            db.SaveChanges();
+                        }
+
+                    }
+                }
+            }
+            Messagebox.Text = "File loaded successfully";
+        }
     }
 
     public class datacontext : DbContext

@@ -25,8 +25,9 @@
 
 
                         </TextBlock>
-                        <Button>Save</Button>
-                        <Button>Load from file</Button>
+                        <Button Name="main_save"  Click="btnSave">Save</Button>
+                        <Button Name ="main_load" Click="btnLoad">Load from file</Button>
+                        <TextBlock Name="Messagebox"></TextBlock>
 
                     </StackPanel>
                     <StackPanel Grid.Column="1">
