@@ -28,18 +28,20 @@ namespace oop_project
 
     public class user
     {
-        public int Id = 1;
+        // variables : 
+
+        public int UserId { get; set; }
         public string IcalUrl { get; set; }
         public virtual List<Evenement> Evenements { get; set; } = new List<Evenement>();
 
         public List<work> tasks { get; set; } = new List<work>();
 
+        //save :
         public override string ToString()
         {
-            //still to write
-            // to call when saving to json format 
+            
             string info = "";
-            info += $"User ID: {Id},\n";
+            info += $"User ID: {UserId},\n";
             info += $"Ical URL: {IcalUrl},\n";
             info += "Evenements: {\n";
             foreach (var evt in Evenements)
@@ -76,14 +78,22 @@ namespace oop_project
         public int Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
-        public DateTime Deadline { get; set; }  
+        public DateTime Deadline { get; set; }
+
+        public override string ToString()
+        {
+            string rep = Name+","+Description+","+Deadline.ToString();
+
+
+            return rep;
+        }
     }
 
-    /// <summary>
-    /// Logique d'interaction pour MainWindow.xaml
-    /// </summary>
+    // <summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
+        // variables :
+
         public string UrlIcal { get; set; }
         public ObservableCollection<Evenement> Evenements { get; } = new ObservableCollection<Evenement>();
         public DateTime JourSelectionne { get; set; } = DateTime.Today;
@@ -91,27 +101,29 @@ namespace oop_project
         user actu = new user();
         public int count = 1;
         datacontext db = new datacontext();
-
-
-
-
-
         public IEnumerable<Evenement> EvenementsDuJour => Evenements.Where(e => e.Debut.Date == JourSelectionne.Date).OrderBy(e => e.Debut);
+
+
+
         public MainWindow()
         {
             InitializeComponent();
             DataContext = this;
-            using (db)
-            {
-                db.Users.Add(actu);
-                db.SaveChanges();
-            }
+            
+            actu.UserId = 1;
+            db.Users.Add(actu);
+            db.SaveChanges();
+            lstTasks.ItemsSource = db.Tasks;
+            txtTaskDetails.Visibility = Visibility.Collapsed;
+            
 
         }
         private void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+        //loading calendar :
         public async Task ChargerCalendrierAsync()
         {
             //https://timetables.atu.ie/Ical/StudentSet?studentSetID=a6c7b613-634c-ddbc-984c-ca7f1e7cc858&locality=sligo 
@@ -125,30 +137,34 @@ namespace oop_project
 
             Evenements.Clear();
 
-            var start = new CalDateTime(DateTime.Today.AddMonths(-1));
-            var end = new CalDateTime(DateTime.Today.AddMonths(2));
+            var start = new CalDateTime(DateTime.SpecifyKind(DateTime.Today.AddMonths(-1), DateTimeKind.Unspecified));
+            var end = new CalDateTime(DateTime.SpecifyKind(DateTime.Today.AddMonths(2), DateTimeKind.Unspecified));
+
 
             var occurrences = calendar.Events
                 .SelectMany(e => e.GetOccurrences(start, null));
 
-            using (db)
-            {
+            
                 foreach (var occ in occurrences)
                 {
                     Evenements.Add(new Evenement
                     {
+                        
                         Titre = occ.Source.ToString(),
-                        Debut = occ.Period.StartTime.ToTimeZone(TimeZone.CurrentTimeZone.ToString()).Value,
-                        Fin = occ.Period.EndTime.ToTimeZone(TimeZone.CurrentTimeZone.ToString()).Value,
+                        Debut = occ.Period.StartTime.ToTimeZone(TimeZoneInfo.Local.ToString()).Value,
+                        Fin = occ.Period.EndTime?.ToTimeZone(TimeZoneInfo.Local.ToString()).Value ?? DateTime.MaxValue , 
                         userId = 1,
                         User = actu,
                         Id = count++
 
                     });
+                    
                     db.Evenements.Add(Evenements.Last());
+                    
                 }
+                
                 db.SaveChanges();
-            }
+                
             actu.Evenements = Evenements.ToList();
             OnPropertyChanged(nameof(EvenementsDuJour));
 
@@ -162,19 +178,18 @@ namespace oop_project
 
         private void btnTaskadd(object sender, RoutedEventArgs e)
         {
-            using (db)
+            
+            actu.tasks.Add(new work
             {
-                actu.tasks.Add(new work
-                {
-                    Name = tblk_task_name.Text,
-                    Description = tblk_task_desc.Text,
-                    Deadline = DateTime.ParseExact(tblk_task_due_date.Text, "dd/MM/yyyy", CultureInfo.InvariantCulture),
-                    userId = 1,
-                    User = actu,
-                    Id = actu.tasks.Count + 1
-                });
-                db.Tasks.Add(actu.tasks.Last());
-            }
+                Name = tblk_task_name.Text,
+                Description = tblk_task_desc.Text,
+                Deadline = DateTime.ParseExact(tblk_task_due_date.Text, "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                userId = 1,
+                User = actu,
+                Id = actu.tasks.Count + 1
+            });
+            
+            db.Tasks.Add(actu.tasks.Last());
             db.SaveChanges();
 
         }
@@ -228,8 +243,7 @@ namespace oop_project
                     }
                     else
                     {
-                        using (db)
-                        {
+                        
                             loadfile.ReadLine();
                             string[] temp = loadfile.ReadLine().Split(':');
                             string ical = "";
@@ -283,12 +297,25 @@ namespace oop_project
                             }
                             db.Users.Add(actu);
                             db.SaveChanges();
-                        }
+                        
 
                     }
                 }
             }
             Messagebox.Text = "File loaded successfully";
+        }
+
+        private void window_closed(object sender, EventArgs e)
+        {
+
+            db.Dispose();
+        }
+
+
+        private void task_selected(object sender, SelectionChangedEventArgs e)
+        {
+            txtTaskDetails.Visibility = Visibility.Visible;
+            txtTaskDetails.ItemsSource = lstTasks.SelectedItem.ToString().Split(',');
         }
     }
 
@@ -296,6 +323,7 @@ namespace oop_project
     {
         public datacontext() : base("Mydatacontext") { }
         public DbSet<user> Users { get; set; }
+        
         public DbSet<Evenement> Evenements { get; set; }
         public DbSet<work> Tasks { get; set; }
     }
