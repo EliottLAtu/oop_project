@@ -21,7 +21,7 @@ using Ical.Net.DataTypes;
 using Ical.Net.Evaluation;
 using System.Globalization;
 using System.Data.Entity;
-
+using PublicHoliday;
 
 namespace oop_project
 {
@@ -69,6 +69,8 @@ namespace oop_project
         public DateTime Debut { get; set; }
         public DateTime Fin { get; set; }
         public string Titre { get; set; }
+
+        public DateTime DateUniquement => Debut.Date;
     }
 
     public class work
@@ -88,6 +90,41 @@ namespace oop_project
             return rep;
         }
     }
+
+    public static class HolidayService
+    {
+        public static IEnumerable<KeyValuePair<DateTime, string>> GetHolidaysForCurrentRegion(int year)
+        {
+            string countryCode = RegionInfo.CurrentRegion.TwoLetterISORegionName;
+            IPublicHolidays calculator;
+            switch (countryCode)
+            {
+                case "FR":
+                    calculator = new FrancePublicHoliday();
+                    break;
+                case "BE":
+                    calculator =  new BelgiumPublicHoliday();
+                    break;
+                case "CA":
+                    calculator= new CanadaPublicHoliday();
+                    break;
+                case "US":
+                    calculator = new USAPublicHoliday();
+                    break;
+                case "DE":
+                    calculator = new GermanPublicHoliday();
+                    break;
+                case "IE":
+                    calculator = new IrelandPublicHoliday();
+                    break;
+                default:
+                    calculator = new FrancePublicHoliday(); 
+                    break;
+            }
+            return calculator.PublicHolidaysInformation(year).Select(h => new KeyValuePair<DateTime, string>(h.HolidayDate, h.Name));
+        }
+           
+        }
 
     // <summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
@@ -113,9 +150,14 @@ namespace oop_project
             actu.UserId = 1;
             db.Users.Add(actu);
             db.SaveChanges();
-            lstTasks.ItemsSource = db.Tasks;
+            lstTasks.ItemsSource = actu.tasks;
             txtTaskDetails.Visibility = Visibility.Collapsed;
-            
+            Hollidays();
+            Main_text.Text = "Hello, \n This app is student made for a project using WPF \n" +
+                "This app is a student planner to help you organize yourself better during college. \n" +
+                "I hope it will help you well\n"+
+                "If you have any improvements don't hesitate and contact me";
+
 
         }
         private void OnPropertyChanged(string propertyName)
@@ -144,26 +186,26 @@ namespace oop_project
             var occurrences = calendar.Events
                 .SelectMany(e => e.GetOccurrences(start, null));
 
-            
-                foreach (var occ in occurrences)
-                {
-                    Evenements.Add(new Evenement
-                    {
-                        
-                        Titre = occ.Source.ToString(),
-                        Debut = occ.Period.StartTime.ToTimeZone(TimeZoneInfo.Local.ToString()).Value,
-                        Fin = occ.Period.EndTime?.ToTimeZone(TimeZoneInfo.Local.ToString()).Value ?? DateTime.MaxValue , 
-                        userId = 1,
-                        User = actu,
-                        Id = count++
 
-                    });
-                    
-                    db.Evenements.Add(Evenements.Last());
-                    
-                }
-                
-                db.SaveChanges();
+            foreach (var occ in occurrences)
+            {
+                var calendarEvent = occ.Source as Ical.Net.CalendarComponents.CalendarEvent;
+
+                Evenements.Add(new Evenement
+                {
+                    Titre = calendarEvent?.Summary ?? "Sans titre",
+                    // Utilisez .AsSystemLocal pour convertir le type Ical en DateTime standard
+                    Debut = occ.Period.StartTime.ToTimeZone( TimeZoneInfo.Local.Id).Value,
+                    Fin = occ.Period.EndTime?.ToTimeZone( TimeZoneInfo.Local.Id).Value ?? DateTime.MaxValue,
+                    userId = 1,
+                    User = actu,
+                    Id = count++
+                });
+
+                db.Evenements.Add(Evenements.Last());
+            }
+
+            db.SaveChanges();
                 
             actu.Evenements = Evenements.ToList();
             OnPropertyChanged(nameof(EvenementsDuJour));
@@ -228,7 +270,6 @@ namespace oop_project
             dlg.DefaultExt = ".json";
             dlg.Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*";
             dlg.CheckFileExists = true;
-            int skipper =0;
             Nullable<bool> result = dlg.ShowDialog();
             if (result == true)
             {
@@ -316,6 +357,17 @@ namespace oop_project
         {
             txtTaskDetails.Visibility = Visibility.Visible;
             txtTaskDetails.ItemsSource = lstTasks.SelectedItem.ToString().Split(',');
+        }
+
+        protected void Hollidays ()
+        {
+            var year = DateTime.Now.Year;
+            var list = HolidayService.GetHolidaysForCurrentRegion(year)
+                .Select(h => new {Date = $"{h.Key.Day}/{h.Key.Month}/{h.Key.Year}", h.Value })
+                .OrderBy(h => h.Date)
+                .ToList();
+            
+            Holidays.ItemsSource = list;
         }
     }
 

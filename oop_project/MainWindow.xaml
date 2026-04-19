@@ -7,6 +7,15 @@
         mc:Ignorable="d"
         Title="Studentplanner" Height="450" Width="800" Closed="window_closed">
 
+
+    <Window.Resources>
+        <CollectionViewSource x:Key="EvenementsGroupes" Source="{Binding Evenements}">
+            <CollectionViewSource.GroupDescriptions>
+                <PropertyGroupDescription PropertyName="DateUniquement" />
+            </CollectionViewSource.GroupDescriptions>
+        </CollectionViewSource>
+    </Window.Resources>
+
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="17*"/>
@@ -25,32 +34,31 @@
 
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock>
-                            Hello,
-
-
-                        </TextBlock>
+                        <TextBox TextWrapping="Wrap" AcceptsReturn="True" Name="Main_text">
+                            
+                        </TextBox>
                         <Button Name="main_save"  Click="BtnSave">Save</Button>
                         <Button Name ="main_load" Click="btnLoad">Load from file</Button>
                         <TextBlock Name="Messagebox"></TextBlock>
 
                     </StackPanel>
                     <StackPanel Grid.Column="1">
-                        <ItemsControl>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Margin="5"
-                        Padding="10"
-                        Background="Black"
-                        CornerRadius="5">
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding Titre}" FontWeight="Bold"/>
-                                            <TextBlock Text="{Binding Debut, StringFormat='{}{0:HH:mm}'}"/>
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Image Grid.Row="0">
+                                <Image.Source>
+                                    <BitmapImage UriSource="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwww.atmp.ie%2Fwp-content%2Fuploads%2F2022%2F08%2FATU-Logo-Initial-English-RGB-Green-500.png"/>
+                                </Image.Source>
+                            </Image>
+                            <Image Grid.Row="1">
+                                <Image.Source>
+                                    <BitmapImage UriSource="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fcompanieslogo.com%2Fimg%2Forig%2Fepita-fr-2e773847.png"/>
+                                </Image.Source>
+                            </Image>
+                        </Grid>
                     </StackPanel>
                 </Grid>
             </TabItem>
@@ -87,46 +95,76 @@
                 </Grid>
 
             </TabItem>
-            
-            <TabItem Header="Timetable" Height="22" Margin="-2,0,-2,0" VerticalAlignment="Bottom">
-                <StackPanel Margin="10">
+            <TabItem Header="Timetable" Height="20" VerticalAlignment="Top">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-                    <TextBlock Text="iCal Link "/>
+                    <StackPanel Grid.Row="0" Margin="10">
+                        <TextBlock Text="iCal Link"/>
+                        <TextBox Text="{Binding UrlIcal, UpdateSourceTrigger=PropertyChanged}" Margin="0,5"/>
+                        <Button Content="Load the timetable" Click="Button_Click" Margin="0,5"/>
+                    </StackPanel>
+                    <ListBox ItemsSource="{Binding Source={StaticResource EvenementsGroupes}}" BorderThickness="0" Grid.Row="1">
+                        <ListBox.GroupStyle> 
+                            <GroupStyle>
+                                <GroupStyle.HeaderTemplate>
+                                    <DataTemplate>
+                                        <TextBlock>
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="{}{0:HH:mm} - {1:HH:mm}">
+                                                    <Binding Path="Debut" />
+                                                    <Binding Path="Fin" />
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </GroupStyle.HeaderTemplate>
+                            </GroupStyle>
+                        </ListBox.GroupStyle>
 
-                    <TextBox Text="{Binding UrlIcal, UpdateSourceTrigger=PropertyChanged}"
-             Margin="0,5"/>
-
-                    <Button Content="Load the timetable"
-            Margin="0,10" Click="Button_Click"/>
-
-                    <!-- Vue jour -->
-                    <ItemsControl ItemsSource="{Binding EvenementsDuJour}">
-                        <ItemsControl.ItemTemplate>
+                        <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Border Margin="4"
-                        Padding="8"
-                        Background="#E8F5E9"
-                        CornerRadius="4">
+                                <Border Margin="2" Padding="8" Background="#E8F5E9" CornerRadius="4">
                                     <StackPanel>
                                         <TextBlock Text="{Binding Titre}" FontWeight="Bold"/>
                                         <TextBlock>
-                            <Run Text="{Binding Debut, StringFormat='{}{0:HH:mm}'}"/>
-                            <Run Text=" - "/>
-                            <Run Text="{Binding Fin, StringFormat='{}{0:HH:mm}'}"/>
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="{}{0:HH:mm} - {1:HH:mm}">
+                                                    <Binding Path="Debut"/>
+                                                    <Binding Path="Fin"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
                                         </TextBlock>
                                     </StackPanel>
                                 </Border>
                             </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                        </ListBox.ItemTemplate>
 
-                </StackPanel>
-
-            </TabItem>
-            <TabItem Header="Planning">
-                <Grid>
-
+                    </ListBox>
                 </Grid>
+            </TabItem>
+            <TabItem Header="Calendar" Height="20" VerticalAlignment="Top">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition></ColumnDefinition>
+                        <ColumnDefinition></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <Viewbox Grid.Column="0">
+                        <Calendar></Calendar>
+                    </Viewbox>
+                    <Grid Grid.Column="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="20"></RowDefinition>
+                            <RowDefinition Height="*"></RowDefinition>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Public Holidays this year :"></TextBlock>
+                        <ListBox Grid.Row="1" Name="Holidays"></ListBox>
+                    </Grid>
+                </Grid>
+                
             </TabItem>
 
 
