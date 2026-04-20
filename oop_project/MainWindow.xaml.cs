@@ -35,7 +35,8 @@ namespace oop_project
         public string IcalUrl { get; set; }
         public virtual List<Evenement> Evenements { get; set; } = new List<Evenement>();
 
-        public ObservableCollection<work> tasks { get; set; } = new ObservableCollection<work>();
+        public List<work> tasks { get; set; } = new List<work>();
+        public ObservableCollection<string> ToDo { get; set; } = new ObservableCollection<string>();
 
         //save :
         public override string ToString()
@@ -140,6 +141,7 @@ namespace oop_project
         public int count = 1;
         datacontext db = new datacontext();
         public IEnumerable<Evenement> EvenementsDuJour => Evenements.Where(e => e.Debut.Date == JourSelectionne.Date).OrderBy(e => e.Debut);
+        public string last_selected;
 
 
 
@@ -152,7 +154,7 @@ namespace oop_project
             actu.UserId = 1;
             db.Users.Add(actu);
             db.SaveChanges();
-            lstTasks.ItemsSource = actu.tasks;
+            lstTasks.ItemsSource = actu.ToDo;
             txtTaskDetails.Visibility = Visibility.Collapsed;
             Hollidays();
             Main_text.Text = "Hello, \n" +
@@ -237,14 +239,14 @@ namespace oop_project
             tblk_task_name.Text = "";
             db.Tasks.Add(actu.tasks.Last());
             db.SaveChanges();
-            Console.WriteLine(actu.tasks.Count.ToString());
-            OnPropertyChanged("actu.tasks");
-            Console.WriteLine(lstTasks.Items.Count.ToString());
+            actu.ToDo.Add(actu.tasks.Last().Name);
         }
 
         private void btnTaskDel(object sender, RoutedEventArgs e)
         {
-            var rem = lstTasks.SelectedItem;
+            taskDetailsPanel.Visibility = Visibility.Collapsed;
+            actu.ToDo.Remove(last_selected.Split(',').First());
+            actu.tasks.RemoveAll(t=> t.Name == last_selected.Split(',').First());
         }
 
         private void BtnSave(object sender, RoutedEventArgs e)
@@ -361,8 +363,9 @@ namespace oop_project
 
         private void task_selected(object sender, SelectionChangedEventArgs e)
         {
-            txtTaskDetails.Visibility = Visibility.Visible;
-            txtTaskDetails.ItemsSource = lstTasks.SelectedItem.ToString().Split(',');
+            taskDetailsPanel.Visibility = Visibility.Visible;
+            last_selected = actu.tasks.Where(t => t.Name == lstTasks.SelectedItem.ToString()).First().ToString();
+            txtTaskDetails.ItemsSource = last_selected.Split(',');
         }
 
         protected void Hollidays ()

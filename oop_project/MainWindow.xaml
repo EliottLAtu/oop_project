@@ -116,7 +116,7 @@
                             <ListBox Name="lstTasks" SelectionChanged="task_selected" Grid.Row="1"/>
                         </Grid>
                     </StackPanel>
-                    <StackPanel Grid.Column="2">
+                    <StackPanel Grid.Column="2" Visibility="Collapsed" Name="taskDetailsPanel">
                         <TextBlock> Details of selected task :</TextBlock>
                         <ListBox x:Name="txtTaskDetails">
 
