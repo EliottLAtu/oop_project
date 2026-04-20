@@ -22,6 +22,7 @@ using Ical.Net.Evaluation;
 using System.Globalization;
 using System.Data.Entity;
 using PublicHoliday;
+using System.Collections.Specialized;
 
 namespace oop_project
 {
@@ -34,7 +35,7 @@ namespace oop_project
         public string IcalUrl { get; set; }
         public virtual List<Evenement> Evenements { get; set; } = new List<Evenement>();
 
-        public List<work> tasks { get; set; } = new List<work>();
+        public ObservableCollection<work> tasks { get; set; } = new ObservableCollection<work>();
 
         //save :
         public override string ToString()
@@ -142,6 +143,7 @@ namespace oop_project
 
 
 
+
         public MainWindow()
         {
             InitializeComponent();
@@ -153,7 +155,8 @@ namespace oop_project
             lstTasks.ItemsSource = actu.tasks;
             txtTaskDetails.Visibility = Visibility.Collapsed;
             Hollidays();
-            Main_text.Text = "Hello, \n This app is student made for a project using WPF \n" +
+            Main_text.Text = "Hello, \n" +
+                "This app is student made for a project using WPF \n" +
                 "This app is a student planner to help you organize yourself better during college. \n" +
                 "I hope it will help you well\n"+
                 "If you have any improvements don't hesitate and contact me";
@@ -194,7 +197,6 @@ namespace oop_project
                 Evenements.Add(new Evenement
                 {
                     Titre = calendarEvent?.Summary ?? "Sans titre",
-                    // Utilisez .AsSystemLocal pour convertir le type Ical en DateTime standard
                     Debut = occ.Period.StartTime.ToTimeZone( TimeZoneInfo.Local.Id).Value,
                     Fin = occ.Period.EndTime?.ToTimeZone( TimeZoneInfo.Local.Id).Value ?? DateTime.MaxValue,
                     userId = 1,
@@ -220,20 +222,24 @@ namespace oop_project
 
         private void btnTaskadd(object sender, RoutedEventArgs e)
         {
-            
+            DateTime deadline;
             actu.tasks.Add(new work
             {
                 Name = tblk_task_name.Text,
                 Description = tblk_task_desc.Text,
-                Deadline = DateTime.ParseExact(tblk_task_due_date.Text, "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                Deadline = DateTime.TryParseExact(tblk_task_due_date.Text,"dd/MM/yyyy",CultureInfo.InvariantCulture,DateTimeStyles.None,out deadline) ? deadline : DateTime.Now,
                 userId = 1,
                 User = actu,
                 Id = actu.tasks.Count + 1
             });
-            
+            tblk_task_desc.Text = "";
+            tblk_task_due_date.Text = "";
+            tblk_task_name.Text = "";
             db.Tasks.Add(actu.tasks.Last());
             db.SaveChanges();
-
+            Console.WriteLine(actu.tasks.Count.ToString());
+            OnPropertyChanged("actu.tasks");
+            Console.WriteLine(lstTasks.Items.Count.ToString());
         }
 
         private void btnTaskDel(object sender, RoutedEventArgs e)
